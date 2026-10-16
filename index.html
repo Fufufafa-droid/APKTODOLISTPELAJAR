@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyFlow - To-Do List Pelajar</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* Theme Styling */
+        body.theme-light {
+            background-color: #F3F4F6;
+            color: #1F2937;
+        }
+        body.theme-dark {
+            background-color: #0F172A;
+            color: #F8FAFC;
+        }
+        body.theme-pastel {
+            background-color: #F3E8FF;
+            color: #4C1D95;
+        }
+        body.theme-cyberpunk {
+            background-color: #090D16;
+            color: #38BDF8;
+        }
+
+        .card-theme {
+            transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        body.theme-light .card-theme { background-color: #FFFFFF; border-color: #E5E7EB; }
+        body.theme-dark .card-theme { background-color: #1E293B; border-color: #334155; color: #F8FAFC; }
+        body.theme-pastel .card-theme { background-color: #FFFFFF; border-color: #DDD6FE; color: #4C1D95; }
+        body.theme-cyberpunk .card-theme { background-color: #131C2E; border-color: #0284C7; color: #E0F2FE; box-shadow: 0 0 10px rgba(6, 182, 212, 0.15); }
+
+        .task-item {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .task-item:hover {
+            transform: translateY(-2px);
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #9CA3AF;
+            border-radius: 4px;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) scale(1); }
+            50% { transform: translateY(-10px) scale(1.02); }
+        }
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.4; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.1); }
+        }
+        .animate-float {
+            animation: float 4s ease-in-out infinite;
+        }
+        .animate-pulse-glow {
+            animation: pulseGlow 6s ease-in-out infinite;
+        }
+        .login-card-backdrop {
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+    </style>
+</head>
+<body class="theme-light min-h-screen pb-12 overflow-x-hidden">
+
+    <div id="loginOverlay" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950 transition-all duration-700 ease-in-out">
+        <!-- Glowing animated background orbs -->
+        <div class="absolute w-72 h-72 sm:w-96 sm:h-96 bg-purple-600/30 rounded-full blur-3xl -top-10 -left-10 animate-pulse-glow"></div>
+        <div class="absolute w-72 h-72 sm:w-96 sm:h-96 bg-indigo-600/30 rounded-full blur-3xl -bottom-10 -right-10 animate-pulse-glow" style="animation-delay: 2s;"></div>
+        <div class="absolute w-60 h-60 bg-pink-600/20 rounded-full blur-3xl top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-pulse-glow" style="animation-delay: 4s;"></div>
+
+        <!-- Login Card -->
+        <div id="loginCard" class="relative z-10 w-full max-w-md p-8 rounded-3xl bg-white/10 dark:bg-slate-900/40 border border-white/20 dark:border-slate-700/50 shadow-2xl login-card-backdrop animate-float text-center text-white space-y-6">
+            
+            <!-- Animated Icon Badge -->
+            <div class="relative mx-auto w-20 h-20 rounded-2xl bg-gradient-to-tr from-purple-500 via-indigo-500 to-pink-500 p-0.5 shadow-lg shadow-indigo-500/30">
+                <div class="w-full h-full bg-slate-950/80 backdrop-blur-md rounded-[14px] flex items-center justify-center">
+                    <i class="fa-solid fa-graduation-cap text-3xl bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent"></i>
+                </div>
+            </div>
+
+            <!-- Welcome Text -->
+            <div class="space-y-2">
+                <h2 class="text-2xl font-bold tracking-tight">Selamat Datang di <span class="bg-gradient-to-r from-purple-400 via-indigo-300 to-pink-400 bg-clip-text text-transparent">StudyFlow</span></h2>
+                <p class="text-xs text-slate-300">Asisten produktivitas dan perencanaan belajar impianmu.</p>
+            </div>
+
+            <!-- Name Form -->
+            <form id="loginForm" onsubmit="handleLoginSubmit(event)" class="space-y-4 pt-2">
+                <div class="text-left space-y-1.5">
+                    <label class="text-xs font-semibold text-slate-300 ml-1">Siapa Nama Panggilanmu?</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-user absolute left-4 top-3.5 text-slate-400 text-sm"></i>
+                        <input type="text" id="loginNameInput" required placeholder="Contoh: Budi Ambis" class="w-full pl-10 pr-4 py-3 rounded-xl bg-white/10 dark:bg-slate-800/60 border border-white/20 dark:border-slate-700 text-white placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 focus:bg-white/20 transition-all">
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full py-3 px-6 rounded-xl bg-gradient-to-r from-purple-500 via-indigo-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 font-semibold text-sm shadow-lg shadow-indigo-500/25 transition-all transform active:scale-95 flex items-center justify-center gap-2">
+                    <span>Mulai Belajar Sekarang</span>
+                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                </button>
+            </form>
+
+            <p class="text-[11px] text-slate-400">Data tersimpan aman langsung di browsermu.</p>
+        </div>
+    </div>
+
+    <!-- MAIN APP CONTENT -->
+    <header class="sticky top-0 z-40 backdrop-blur-md bg-opacity-80 border-b card-theme px-4 lg:px-8 py-3 mb-6">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            
+            <!-- Logo & Greeting -->
+            <div class="flex items-center gap-3 w-full md:w-auto justify-between">
+                <div class="flex items-center gap-2">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-xl shadow-lg">
+                        <i class="fa-solid font-bold fa-graduation-cap"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg leading-tight">StudyFlow</h1>
+                        <p class="text-xs opacity-75">To-Do List Pelajar Pro</p>
+                    </div>
+                </div>
+                
+                <!-- Quick Mobile Stats Badge & Mobile Dark Toggle -->
+                <div class="flex items-center gap-2 md:hidden">
+                    <button onclick="toggleQuickDarkLight()" class="p-2 rounded-xl bg-black/5 dark:bg-white/10 text-xs font-semibold flex items-center gap-1">
+                        <i id="quickThemeIconMobile" class="fa-solid fa-moon"></i>
+                    </button>
+                    <span id="mobileProgressText" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200">0% Selesai</span>
+                </div>
+            </div>
+
+            <!-- Profile Greeting & Action Buttons -->
+            <div class="flex items-center gap-3 w-full md:w-auto justify-end">
+                <div class="text-right hidden sm:block">
+                    <h2 id="displayGreeting" class="font-semibold text-sm">Halo, Siswa Ambis! 👋</h2>
+                    <p class="text-xs opacity-70">Tetap semangat belajar hari ini!</p>
+                </div>
+
+                <!-- Switch User Button -->
+                <button onclick="logoutToLogin()" class="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400" title="Ganti Nama / Login Ulang">
+                    <i class="fa-solid fa-right-from-bracket text-base"></i>
+                </button>
+
+                <!-- Quick Dark / Light Switcher Button -->
+                <button onclick="toggleQuickDarkLight()" id="quickThemeBtn" class="hidden md:flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-black/5 dark:bg-white/10 hover:opacity-80 transition text-xs font-medium" title="Ganti Mode Gelap / Terang">
+                    <i id="quickThemeIcon" class="fa-solid fa-moon text-indigo-500 dark:text-yellow-400"></i>
+                    <span id="quickThemeText">Mode Gelap</span>
+                </button>
+                
+                <button onclick="openProfileModal()" class="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition" title="Pengaturan Profil & Tema Lengkap">
+                    <i class="fa-solid fa-user-gear text-lg"></i>
+                </button>
+                <button onclick="openCategoryModal()" class="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition" title="Kelola Kategori/Mata Pelajaran">
+                    <i class="fa-solid fa-tags text-lg"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 lg:px-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            <!-- LEFT COLUMN: Productivity Stats & Pomodoro Timer -->
+            <div class="space-y-6">
+                
+                <!-- Progress & Stats Card -->
+                <div class="card-theme p-5 rounded-2xl border shadow-sm">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-semibold text-base flex items-center gap-2">
+                            <i class="fa-solid fa-chart-pie text-purple-500"></i> Progres Belajar
+                        </h3>
+                        <span id="progressPercentage" class="text-xs font-bold px-2 py-1 bg-purple-500 text-white rounded-full">0%</span>
+                    </div>
+                    
+                    <!-- Progress Bar -->
+                    <div class="w-full bg-gray-200 dark:bg-gray-700 h-3 rounded-full overflow-hidden mb-4">
+                        <div id="progressBar" class="bg-gradient-to-r from-purple-500 to-indigo-500 h-full w-0 transition-all duration-500 rounded-full"></div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2 text-center text-xs">
+                        <div class="p-2 rounded-lg bg-black/5 dark:bg-white/5">
+                            <p class="opacity-70">Total</p>
+                            <p id="statTotal" class="text-lg font-bold">0</p>
+                        </div>
+                        <div class="p-2 rounded-lg bg-yellow-500/10 text-yellow-600 dark:text-yellow-400">
+                            <p class="opacity-70">Pending</p>
+                            <p id="statPending" class="text-lg font-bold">0</p>
+                        </div>
+                        <div class="p-2 rounded-lg bg-green-500/10 text-green-600 dark:text-green-400">
+                            <p class="opacity-70">Selesai</p>
+                            <p id="statCompleted" class="text-lg font-bold">0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Integrated Pomodoro Timer Card -->
+                <div class="card-theme p-5 rounded-2xl border shadow-sm">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-semibold text-base flex items-center gap-2">
+                            <i class="fa-solid fa-stopwatch text-red-500"></i> Timer Pomodoro Focus
+                        </h3>
+                        <span id="pomodoroMode" class="text-xs font-medium px-2 py-0.5 rounded bg-red-100 text-red-600 dark:bg-red-900/50 dark:text-red-300">Belajar</span>
+                    </div>
+
+                    <div class="text-center py-2">
+                        <div id="timerDisplay" class="text-5xl font-bold font-mono tracking-tight my-2">25:00</div>
+                        <p class="text-xs opacity-70 mb-4">Fokus belajar tanpa distraksi!</p>
+
+                        <div class="flex justify-center gap-2">
+                            <button id="startTimerBtn" onclick="toggleTimer()" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl shadow transition flex items-center gap-2">
+                                <i class="fa-solid fa-play" id="timerIcon"></i> <span id="timerBtnText">Mulai</span>
+                            </button>
+                            <button onclick="resetTimer()" class="px-3 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-sm font-medium rounded-xl transition">
+                                <i class="fa-solid fa-rotate-right"></i>
+                            </button>
+                            <button onclick="switchPomodoroMode()" class="px-3 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-xs font-medium rounded-xl transition">
+                                Ubah Sesi
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Filter & Action Card -->
+                <div class="card-theme p-5 rounded-2xl border shadow-sm space-y-3">
+                    <h3 class="font-semibold text-base flex items-center gap-2">
+                        <i class="fa-solid fa-filter text-indigo-500"></i> Filter & Urutkan
+                    </h3>
+                    
+                    <div class="space-y-2">
+                        <div>
+                            <label class="text-xs opacity-75 font-medium">Filter Kategori</label>
+                            <select id="filterCategory" onchange="renderTasks()" class="w-full mt-1 p-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent focus:ring-2 focus:ring-indigo-500 outline-none">
+                                <option value="ALL">Semua Mata Pelajaran</option>
+                            </select>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-xs opacity-75 font-medium">Status</label>
+                                <select id="filterStatus" onchange="renderTasks()" class="w-full mt-1 p-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent focus:ring-2 focus:ring-indigo-500 outline-none">
+                                    <option value="ALL">Semua</option>
+                                    <option value="PENDING">Belum Selesai</option>
+                                    <option value="COMPLETED">Selesai</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-xs opacity-75 font-medium">Urutkan</label>
+                                <select id="sortBy" onchange="renderTasks()" class="w-full mt-1 p-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent focus:ring-2 focus:ring-indigo-500 outline-none">
+                                    <option value="DEADLINE">Deadline Terdekat</option>
+                                    <option value="PRIORITY">Prioritas Tertinggi</option>
+                                    <option value="NEWEST">Terbaru</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="lg:col-span-2 space-y-6">
+
+                <!-- Add Task Button Header -->
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-bold">Daftar Tugas Pelajar</h2>
+                        <p class="text-xs opacity-70">Kelola semua pr, kuis, dan proyek sekolahmu di sini.</p>
+                    </div>
+                    <button onclick="openTaskModal()" class="px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-medium text-sm rounded-xl shadow-md transition flex items-center gap-2 transform active:scale-95">
+                        <i class="fa-solid fa-plus"></i> Tambah Tugas
+                    </button>
+                </div>
+
+                <!-- Tasks Search Bar -->
+                <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3.5 opacity-40 text-sm"></i>
+                    <input type="text" id="searchInput" oninput="renderTasks()" placeholder="Cari judul atau deskripsi tugas..." class="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-indigo-500 outline-none transition shadow-sm">
+                </div>
+
+                <!-- Task List Container -->
+                <div id="taskList" class="space-y-3">
+                    <!-- Dynamic tasks will be injected here via JavaScript -->
+                </div>
+
+                <!-- Empty State Placeholder -->
+                <div id="emptyState" class="hidden text-center py-12 card-theme border rounded-2xl">
+                    <img src="https://illustrations.popsy.co/amber/student-with-diploma.svg" alt="Empty Tasks" class="w-40 h-40 mx-auto mb-3 opacity-80" onerror="this.src='https://placehold.co/150x150/8B5CF6/ffffff?text=Tugas+Kosong'">
+                    <h3 class="font-semibold text-lg">Tidak ada tugas ditemukan!</h3>
+                    <p class="text-xs opacity-70 mt-1 max-w-sm mx-auto">Semua tugasmu sudah diselesaikan atau belum ada tugas yang ditambahkan. Tetap pertahankan!</p>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <div id="taskModal" class="fixed inset-0 bg-black/50 z-50 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="card-theme border rounded-2xl w-full max-w-lg p-6 shadow-xl relative">
+            <button onclick="closeTaskModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            <h3 id="taskModalTitle" class="text-lg font-bold mb-4">Tambah Tugas Baru</h3>
+
+            <form id="taskForm" onsubmit="handleTaskSubmit(event)" class="space-y-4">
+                <input type="hidden" id="taskId">
+                
+                <div>
+                    <label class="block text-xs font-semibold mb-1">Judul Tugas / PR <span class="text-red-500">*</span></label>
+                    <input type="text" id="taskTitle" required placeholder="Contoh: Kerjakan Bab 3 Matematika" class="w-full p-2.5 text-sm rounded-xl border border-gray-300 dark:border-gray-600 bg-transparent focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold mb-1">Deskripsi Singkat</label>
+                    <textarea id="taskDesc" rows="2" placeholder="Catatan tambahan, instruksi guru, atau link tugas..." class="w-full p-2.5 text-sm rounded-xl border border-gray-300 dark:border-gray-600 bg-transparent focus:ring-2 focus:ring-indigo-500 outline-none"></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold mb-1">Mata Pelajaran / Kategori <span class="text-red-500">*</span></label>
+                        <select id="taskCategory" required class="w-full p-2.5 text-sm rounded-xl border border-gray-300 dark:border-gray-600 bg-transparent focus:ring-2 focus:ring-indigo-500 outline-none">
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold mb-1">Prioritas</label>
+                        <select id="taskPriority" class="w-full p-2.5 text-sm rounded-xl border border-gray-300 dark:border-gray-600 bg-transparent focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <option value="LOW">Rendah 🟢</option>
+                            <option value="MEDIUM" selected>Sedang 🟡</option>
+                            <option value="HIGH">Tinggi 🔴</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold mb-1">Tanggal Jatuh Tempo (Deadline) <span class="text-red-500">*</span></label>
+                    <input type="date" id="taskDeadline" required class="w-full p-2.5 text-sm rounded-xl border border-gray-300 dark:border-gray-600 bg-transparent focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+
+                <div class="flex justify-end gap-2 pt-3">
+                    <button type="button" onclick="closeTaskModal()" class="px-4 py-2 text-xs font-medium rounded-xl bg-gray-200 dark:bg-gray-700 hover:opacity-80 transition">Batal</button>
+                    <button type="submit" class="px-5 py-2 text-xs font-medium rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white transition">Simpan Tugas</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: Custom Profile & Themes -->
+    <div id="profileModal" class="fixed inset-0 bg-black/50 z-50 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="card-theme border rounded-2xl w-full max-w-md p-6 shadow-xl relative">
+            <button onclick="closeProfileModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            <h3 class="text-lg font-bold mb-4">Pengaturan Profil & Tema</h3>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold mb-1">Nama Panggilan Siswa</label>
+                    <input type="text" id="studentNameInput" placeholder="Masukkan nama kamu..." class="w-full p-2.5 text-sm rounded-xl border border-gray-300 dark:border-gray-600 bg-transparent focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold mb-2">Pilih Warna & Tampilan Tema</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="setTheme('theme-light')" class="p-3 rounded-xl border text-left hover:border-indigo-500 flex items-center gap-2 bg-white text-gray-800">
+                            <span class="w-4 h-4 rounded-full bg-gray-200 border"></span>
+                            <span class="text-xs font-medium">Mode Terang</span>
+                        </button>
+                        <button onclick="setTheme('theme-dark')" class="p-3 rounded-xl border text-left hover:border-indigo-500 flex items-center gap-2 bg-gray-800 text-white">
+                            <span class="w-4 h-4 rounded-full bg-gray-900 border border-gray-700"></span>
+                            <span class="text-xs font-medium">Mode Gelap</span>
+                        </button>
+                        <button onclick="setTheme('theme-pastel')" class="p-3 rounded-xl border text-left hover:border-purple-500 flex items-center gap-2 bg-purple-100 text-purple-900">
+                            <span class="w-4 h-4 rounded-full bg-purple-400"></span>
+                            <span class="text-xs font-medium">Pastel Academic</span>
+                        </button>
+                        <button onclick="setTheme('theme-cyberpunk')" class="p-3 rounded-xl border text-left hover:border-cyan-500 flex items-center gap-2 bg-slate-900 text-cyan-400">
+                            <span class="w-4 h-4 rounded-full bg-cyan-400"></span>
+                            <span class="text-xs font-medium">Cyberpunk / Neon</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex justify-end pt-3">
+                    <button onclick="saveProfileSettings()" class="px-5 py-2 text-xs font-medium rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white transition">Simpan Pengaturan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Manage Categories -->
+    <div id="categoryModal" class="fixed inset-0 bg-black/50 z-50 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="card-theme border rounded-2xl w-full max-w-md p-6 shadow-xl relative">
+            <button onclick="closeCategoryModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            <h3 class="text-lg font-bold mb-4">Kelola Mata Pelajaran / Kategori</h3>
+
+            <form onsubmit="handleAddCategory(event)" class="flex gap-2 mb-4">
+                <input type="text" id="newCategoryName" required placeholder="Tambah Matpel baru..." class="flex-1 p-2 text-xs rounded-xl border border-gray-300 dark:border-gray-600 bg-transparent outline-none">
+                <input type="color" id="newCategoryColor" value="#8B5CF6" class="w-9 h-9 rounded-xl border-none cursor-pointer p-0 bg-transparent">
+                <button type="submit" class="px-3 py-2 bg-indigo-600 text-white text-xs rounded-xl hover:bg-indigo-700 transition">
+                    <i class="fa-solid fa-plus"></i>
+                </button>
+            </form>
+
+            <div id="categoryList" class="space-y-2 max-h-60 overflow-y-auto pr-1">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const DEFAULT_CATEGORIES = [
+            { id: 'cat-1', name: 'Matematika', color: '#EF4444' },
+            { id: 'cat-2', name: 'Bahasa Indonesia', color: '#3B82F6' },
+            { id: 'cat-3', name: 'Bahasa Inggris', color: '#10B981' },
+            { id: 'cat-4', name: 'IPA / Sains', color: '#8B5CF6' },
+            { id: 'cat-5', name: 'IPS / Sejarah', color: '#F59E0B' }
+        ];
+
+        let tasks = JSON.parse(localStorage.getItem('studyflow_tasks')) || [];
+        let categories = JSON.parse(localStorage.getItem('studyflow_categories')) || DEFAULT_CATEGORIES;
+        let studentName = localStorage.getItem('studyflow_student_name') || '';
+        let currentTheme = localStorage.getItem('studyflow_theme') || 'theme-light';
+
+        // Timer State
+        let timerSeconds = 25 * 60;
+        let timerInterval = null;
+        let isTimerRunning = false;
+        let pomodoroType = 'WORK'; // 'WORK' or 'BREAK'
+
+        // Initialize App
+        window.addEventListener('DOMContentLoaded', () => {
+            applyTheme(currentTheme);
+            checkAuth();
+            renderCategoryOptions();
+            renderCategoryList();
+            renderTasks();
+            updateStats();
+        });
+
+        // Login & Welcome Screen Functions
+        function checkAuth() {
+            const overlay = document.getElementById('loginOverlay');
+            if (!studentName) {
+                overlay.classList.remove('hidden');
+                document.getElementById('loginNameInput').focus();
+            } else {
+                overlay.classList.add('hidden');
+                updateGreeting();
+            }
+        }
+
+        function handleLoginSubmit(e) {
+            e.preventDefault();
+            const inputName = document.getElementById('loginNameInput').value.trim();
+            if (inputName) {
+                studentName = inputName;
+                saveData();
+                updateGreeting();
+
+                // Smooth Fade Out Animation
+                const overlay = document.getElementById('loginOverlay');
+                overlay.classList.add('opacity-0', 'scale-105');
+                setTimeout(() => {
+                    overlay.classList.add('hidden');
+                    overlay.classList.remove('opacity-0', 'scale-105');
+                }, 700);
+            }
+        }
+
+        function logoutToLogin() {
+            const overlay = document.getElementById('loginOverlay');
+            document.getElementById('loginNameInput').value = studentName;
+            overlay.classList.remove('hidden', 'opacity-0', 'scale-105');
+            document.getElementById('loginNameInput').focus();
+        }
+
+        function saveData() {
+            localStorage.setItem('studyflow_tasks', JSON.stringify(tasks));
+            localStorage.setItem('studyflow_categories', JSON.stringify(categories));
+            localStorage.setItem('studyflow_student_name', studentName);
+            localStorage.setItem('studyflow_theme', currentTheme);
+        }
+
+        // Quick Dark / Light Mode Switcher Function
+        function toggleQuickDarkLight() {
+            if (currentTheme === 'theme-dark' || currentTheme === 'theme-cyberpunk') {
+                setTheme('theme-light');
+            } else {
+                setTheme('theme-dark');
+            }
+        }
+
+        function setTheme(theme) {
+            currentTheme = theme;
+            applyTheme(theme);
+            saveData();
+        }
+
+        function applyTheme(theme) {
+            document.body.className = `${theme} min-h-screen pb-12`;
+            const isDark = (theme === 'theme-dark' || theme === 'theme-cyberpunk');
+            
+            if(isDark) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+
+            // Update UI Button Dark/Light Indicators
+            const quickThemeIcon = document.getElementById('quickThemeIcon');
+            const quickThemeIconMobile = document.getElementById('quickThemeIconMobile');
+            const quickThemeText = document.getElementById('quickThemeText');
+
+            if(isDark) {
+                if(quickThemeIcon) quickThemeIcon.className = 'fa-solid fa-sun text-yellow-400';
+                if(quickThemeIconMobile) quickThemeIconMobile.className = 'fa-solid fa-sun text-yellow-400';
+                if(quickThemeText) quickThemeText.innerText = 'Mode Terang';
+            } else {
+                if(quickThemeIcon) quickThemeIcon.className = 'fa-solid fa-moon text-indigo-600';
+                if(quickThemeIconMobile) quickThemeIconMobile.className = 'fa-solid fa-moon text-indigo-600';
+                if(quickThemeText) quickThemeText.innerText = 'Mode Gelap';
+            }
+        }
+
+        // Profile Settings
+        function openProfileModal() {
+            document.getElementById('studentNameInput').value = studentName;
+            document.getElementById('profileModal').classList.remove('hidden');
+        }
+        function closeProfileModal() {
+            document.getElementById('profileModal').classList.add('hidden');
+        }
+        function saveProfileSettings() {
+            const input = document.getElementById('studentNameInput').value.trim();
+            if(input) {
+                studentName = input;
+                updateGreeting();
+                saveData();
+                closeProfileModal();
+            }
+        }
+        function updateGreeting() {
+            document.getElementById('displayGreeting').innerText = `Halo, ${studentName}! 👋`;
+        }
+
+        function openCategoryModal() {
+            renderCategoryList();
+            document.getElementById('categoryModal').classList.remove('hidden');
+        }
+        function closeCategoryModal() {
+            document.getElementById('categoryModal').classList.add('hidden');
+        }
+
+        function handleAddCategory(e) {
+            e.preventDefault();
+            const nameInput = document.getElementById('newCategoryName');
+            const colorInput = document.getElementById('newCategoryColor');
+
+            const newCategory = {
+                id: 'cat-' + Date.now(),
+                name: nameInput.value.trim(),
+                color: colorInput.value
+            };
+
+            categories.push(newCategory);
+            nameInput.value = '';
+            saveData();
+            renderCategoryOptions();
+            renderCategoryList();
+            renderTasks();
+        }
+
+        function deleteCategory(catId) {
+            if(categories.length <= 1) {
+                alert('Minimal harus ada 1 mata pelajaran!');
+                return;
+            }
+            categories = categories.filter(c => c.id !== catId);
+            tasks = tasks.map(t => t.categoryId === catId ? {...t, categoryId: categories[0].id} : t);
+            saveData();
+            renderCategoryOptions();
+            renderCategoryList();
+            renderTasks();
+        }
+
+        function renderCategoryOptions() {
+            const taskCategorySelect = document.getElementById('taskCategory');
+            const filterCategorySelect = document.getElementById('filterCategory');
+
+            const categoryHTML = categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+            
+            taskCategorySelect.innerHTML = categoryHTML;
+            filterCategorySelect.innerHTML = `<option value="ALL">Semua Mata Pelajaran</option>` + categoryHTML;
+        }
+
+        function renderCategoryList() {
+            const listContainer = document.getElementById('categoryList');
+            listContainer.innerHTML = categories.map(c => `
+                <div class="flex justify-between items-center p-2 rounded-xl bg-black/5 dark:bg-white/5">
+                    <div class="flex items-center gap-2">
+                        <span class="w-3.5 h-3.5 rounded-full" style="background-color: ${c.color}"></span>
+                        <span class="text-xs font-medium">${c.name}</span>
+                    </div>
+                    <button onclick="deleteCategory('${c.id}')" class="text-red-400 hover:text-red-600 text-xs p-1">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // Task Functions
+        function openTaskModal(taskId = null) {
+            const form = document.getElementById('taskForm');
+            form.reset();
+
+            if(taskId) {
+                const task = tasks.find(t => t.id === taskId);
+                if(task) {
+                    document.getElementById('taskId').value = task.id;
+                    document.getElementById('taskTitle').value = task.title;
+                    document.getElementById('taskDesc').value = task.desc || '';
+                    document.getElementById('taskCategory').value = task.categoryId;
+                    document.getElementById('taskPriority').value = task.priority;
+                    document.getElementById('taskDeadline').value = task.deadline;
+                    document.getElementById('taskModalTitle').innerText = 'Edit Tugas';
+                }
+            } else {
+                document.getElementById('taskId').value = '';
+                document.getElementById('taskDeadline').value = new Date().toISOString().split('T')[0];
+                document.getElementById('taskModalTitle').innerText = 'Tambah Tugas Baru';
+            }
+
+            document.getElementById('taskModal').classList.remove('hidden');
+        }
+
+        function closeTaskModal() {
+            document.getElementById('taskModal').classList.add('hidden');
+        }
+
+        function handleTaskSubmit(e) {
+            e.preventDefault();
+            const id = document.getElementById('taskId').value;
+            const title = document.getElementById('taskTitle').value.trim();
+            const desc = document.getElementById('taskDesc').value.trim();
+            const categoryId = document.getElementById('taskCategory').value;
+            const priority = document.getElementById('taskPriority').value;
+            const deadline = document.getElementById('taskDeadline').value;
+
+            if(id) {
+                tasks = tasks.map(t => t.id === id ? { ...t, title, desc, categoryId, priority, deadline } : t);
+            } else {
+                const newTask = {
+                    id: 'task-' + Date.now(),
+                    title,
+                    desc,
+                    categoryId,
+                    priority,
+                    deadline,
+                    completed: false,
+                    createdAt: new Date().toISOString()
+                };
+                tasks.push(newTask);
+            }
+
+            saveData();
+            renderTasks();
+            updateStats();
+            closeTaskModal();
+        }
+
+        function toggleTaskComplete(taskId) {
+            tasks = tasks.map(t => t.id === taskId ? { ...t, completed: !t.completed } : t);
+            saveData();
+            renderTasks();
+            updateStats();
+        }
+
+        function deleteTask(taskId) {
+            tasks = tasks.filter(t => t.id !== taskId);
+            saveData();
+            renderTasks();
+            updateStats();
+        }
+
+        function renderTasks() {
+            const taskList = document.getElementById('taskList');
+            const emptyState = document.getElementById('emptyState');
+            
+            const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+            const categoryFilter = document.getElementById('filterCategory').value;
+            const statusFilter = document.getElementById('filterStatus').value;
+            const sortBy = document.getElementById('sortBy').value;
+
+            let filteredTasks = tasks.filter(t => {
+                const matchesSearch = t.title.toLowerCase().includes(searchQuery) || (t.desc && t.desc.toLowerCase().includes(searchQuery));
+                const matchesCategory = categoryFilter === 'ALL' || t.categoryId === categoryFilter;
+                const matchesStatus = statusFilter === 'ALL' || (statusFilter === 'COMPLETED' ? t.completed : !t.completed);
+                return matchesSearch && matchesCategory && matchesStatus;
+            });
+
+            filteredTasks.sort((a, b) => {
+                if (sortBy === 'DEADLINE') {
+                    return new Date(a.deadline) - new Date(b.deadline);
+                } else if (sortBy === 'PRIORITY') {
+                    const priorityWeight = { HIGH: 3, MEDIUM: 2, LOW: 1 };
+                    return priorityWeight[b.priority] - priorityWeight[a.priority];
+                } else if (sortBy === 'NEWEST') {
+                    return new Date(b.createdAt) - new Date(a.createdAt);
+                }
+            });
+
+            if (filteredTasks.length === 0) {
+                taskList.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+
+            taskList.innerHTML = filteredTasks.map(t => {
+                const category = categories.find(c => c.id === t.categoryId) || { name: 'Umum', color: '#6B7280' };
+                const isOverdue = !t.completed && new Date(t.deadline) < new Date().setHours(0,0,0,0);
+                
+                const priorityBadge = {
+                    HIGH: '<span class="text-[10px] px-2 py-0.5 rounded-full bg-red-100 text-red-600 dark:bg-red-950 dark:text-red-300 font-semibold">Tinggi</span>',
+                    MEDIUM: '<span class="text-[10px] px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300 font-semibold">Sedang</span>',
+                    LOW: '<span class="text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-600 dark:bg-green-950 dark:text-green-300 font-semibold">Rendah</span>'
+                }[t.priority];
+
+                return `
+                    <div class="task-item card-theme p-4 rounded-2xl border shadow-sm flex items-start justify-between gap-3 ${t.completed ? 'opacity-60 bg-gray-50/50 dark:bg-slate-900/40' : ''}">
+                        <div class="flex items-start gap-3 flex-1 min-w-0">
+                            <button onclick="toggleTaskComplete('${t.id}')" class="mt-1 w-5 h-5 rounded-lg border-2 flex items-center justify-center transition ${t.completed ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-gray-400 hover:border-indigo-500'}">
+                                ${t.completed ? '<i class="fa-solid fa-check text-xs"></i>' : ''}
+                            </button>
+
+                            <div class="flex-1 min-w-0 space-y-1">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-md text-white shadow-xs" style="background-color: ${category.color}">
+                                        ${category.name}
+                                    </span>
+                                    ${priorityBadge}
+                                    ${isOverdue ? '<span class="text-[10px] font-bold text-red-500 animate-pulse"><i class="fa-solid fa-triangle-exclamation"></i> Terlewat!</span>' : ''}
+                                </div>
+
+                                <h4 class="font-semibold text-sm leading-snug break-words ${t.completed ? 'line-through text-gray-400' : ''}">${escapeHTML(t.title)}</h4>
+
+                                ${t.desc ? `<p class="text-xs opacity-75 line-clamp-2 ${t.completed ? 'line-through' : ''}">${escapeHTML(t.desc)}</p>` : ''}
+
+                                <div class="text-[11px] opacity-60 flex items-center gap-1 pt-1">
+                                    <i class="fa-regular fa-calendar text-xs"></i>
+                                    <span>Tenggat: ${formatDate(t.deadline)}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-1">
+                            <button onclick="openTaskModal('${t.id}')" class="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg text-gray-400 hover:text-indigo-500 transition" title="Edit Task">
+                                <i class="fa-solid fa-pen text-xs"></i>
+                            </button>
+                            <button onclick="deleteTask('${t.id}')" class="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg text-gray-400 hover:text-red-500 transition" title="Hapus Task">
+                                <i class="fa-solid fa-trash text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateStats() {
+            const total = tasks.length;
+            const completed = tasks.filter(t => t.completed).length;
+            const pending = total - completed;
+            const percentage = total === 0 ? 0 : Math.round((completed / total) * 100);
+
+            document.getElementById('statTotal').innerText = total;
+            document.getElementById('statPending').innerText = pending;
+            document.getElementById('statCompleted').innerText = completed;
+            
+            document.getElementById('progressPercentage').innerText = `${percentage}%`;
+            document.getElementById('mobileProgressText').innerText = `${percentage}% Selesai`;
+            document.getElementById('progressBar').style.width = `${percentage}%`;
+        }
+
+        function updateTimerDisplay() {
+            const mins = Math.floor(timerSeconds / 60);
+            const secs = timerSeconds % 60;
+            document.getElementById('timerDisplay').innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function toggleTimer() {
+            if (isTimerRunning) {
+                clearInterval(timerInterval);
+                isTimerRunning = false;
+                document.getElementById('timerIcon').className = 'fa-solid fa-play';
+                document.getElementById('timerBtnText').innerText = 'Mulai';
+            } else {
+                isTimerRunning = true;
+                document.getElementById('timerIcon').className = 'fa-solid fa-pause';
+                document.getElementById('timerBtnText').innerText = 'Jeda';
+
+                timerInterval = setInterval(() => {
+                    if (timerSeconds > 0) {
+                        timerSeconds--;
+                        updateTimerDisplay();
+                    } else {
+                        clearInterval(timerInterval);
+                        isTimerRunning = false;
+                        alert(pomodoroType === 'WORK' ? 'Sesi belajar selesai! Waktunya istirahat sebentar 🎉' : 'Waktu istirahat selesai! Mari fokus kembali 💪');
+                        switchPomodoroMode();
+                    }
+                }, 1000);
+            }
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+            document.getElementById('timerIcon').className = 'fa-solid fa-play';
+            document.getElementById('timerBtnText').innerText = 'Mulai';
+            timerSeconds = pomodoroType === 'WORK' ? 25 * 60 : 5 * 60;
+            updateTimerDisplay();
+        }
+
+        function switchPomodoroMode() {
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+            document.getElementById('timerIcon').className = 'fa-solid fa-play';
+            document.getElementById('timerBtnText').innerText = 'Mulai';
+
+            if (pomodoroType === 'WORK') {
+                pomodoroType = 'BREAK';
+                timerSeconds = 5 * 60;
+                document.getElementById('pomodoroMode').innerText = 'Istirahat';
+                document.getElementById('pomodoroMode').className = 'text-xs font-medium px-2 py-0.5 rounded bg-green-100 text-green-600 dark:bg-green-900/50 dark:text-green-300';
+            } else {
+                pomodoroType = 'WORK';
+                timerSeconds = 25 * 60;
+                document.getElementById('pomodoroMode').innerText = 'Belajar';
+                document.getElementById('pomodoroMode').className = 'text-xs font-medium px-2 py-0.5 rounded bg-red-100 text-red-600 dark:bg-red-900/50 dark:text-red-300';
+            }
+            updateTimerDisplay();
+        }
+
+        function formatDate(dateStr) {
+            const options = { day: 'numeric', month: 'short', year: 'numeric' };
+            return new Date(dateStr).toLocaleDateString('id-ID', options);
+        }
+
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, 
+                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+            );
+        }
+    </script>
+</body>
+</html>
